@@ -26,23 +26,57 @@ bool file_exists(char *fn)
   return (stat(fn, &buffer) == 0);
 }
 
+/* n=1..3 */
+unsigned int get_mark(CHAR *p, int n)
+{
+#ifdef __DEBUGLOG__
+  cout << "> get_mark(p="<<(void*)p<<", n="<<n<<"), *p=["<<hex(p, 3)<<"]"<<endl;
+#endif
+  unsigned int rv = *p++;
+  if (--n>0) rv = (rv << 8) | *p++;
+  if (--n>0) rv = (rv << 8) | *p++;
+#ifdef __DEBUGLOG__
+  cout << "< get_mark returns "<<(void*)(unsigned long)rv<<endl;
+#endif
+  return rv;
+}
+
 bool begin_of_line(CHAR *p)
 {
-  unsigned int d = *((unsigned int *)p);
 #ifdef __DEBUGLOG__
-  cout << "> begin_of_line(p="<<(void*)p<<"), *p=["<<hex(p, 6)<<"], dword@p="<<(void*)(unsigned long)d<<endl;
+  cout << "> begin_of_line(p="<<(void*)p<<")"<<endl;
 #endif
-  bool rv = d==0xe60001e5 && p[4]==0x0a && p[5]==0x00;
+  unsigned int mark = get_mark(p, 3);
+  bool rv = mark==FORMAT1_ON || mark==FORMAT2_ON;
 #ifdef __DEBUGLOG__
   cout << "< begin_of_line returns "<<rv<<endl;
 #endif
   return rv;
 }
 
+bool valid_line(CHAR *p)
+{
+  bool rv;
+  unsigned int mark;
+  // пропускаем все метки формата
+  do {
+    mark = get_mark(p, 3);
+    p += 3;
+  } while (mark==FORMAT1_ON || mark==FORMAT1_OFF || mark==FORMAT2_ON || mark==FORMAT2_OFF);
+  rv = *p!='\0';  // если после всех меток формата у нас ненулевой байт,
+                  // то строка годная
+  return rv;
+}
+
 bool end_of_line(CHAR *p)
 {
-  unsigned short d = *((unsigned short *)p);
-  bool rv = d==0x00C4;
+#ifdef __DEBUGLOG__
+  cout << "> end_of_line(p="<<(void*)p<<")"<<endl;
+#endif
+  bool rv = get_mark(p, 2)==LINE_END;
+#ifdef __DEBUGLOG__
+  cout << "< end_of_line returns "<<rv<<endl;
+#endif
   return rv;
 }
 
@@ -54,9 +88,10 @@ bool find_line(CHAR *buf, off_t &pos, off_t len)
   bool rv = false;
   while (pos<len) {
     if (begin_of_line(buf+pos)) {
-      pos += 6;
-      rv = true;
-      break;
+      if (valid_line(buf+pos)) {
+        rv = true;
+        break;
+      }
     }
     pos += 4;
   }
@@ -85,8 +120,8 @@ CHAR *get_line(CHAR *buf, off_t &pos, off_t len)
   if (slen>0)
     memcpy(rv, buf+pos, slen);
   rv[slen]='\0';
-  // сигнатура конца строки = c4 00
-  pos += slen+2;
+  // сигнатура конца строки = c4 00, потом 00 или (очень редко) другой байт
+  pos += slen+3;  // поэтому можно прибавить сразу 3
   // теперь выравниваем на 4 байта
   pos = (pos+3)&((off_t)-1^3);
 #ifdef __DEBUGLOG__
@@ -109,7 +144,31 @@ void decode_line(CHAR *line)
     cout << "  decode_line: line["<<i<<"]="<<hex(line+i, 1);
     cout << ", line["<<i+1<<"]="<<hex(line+i+1, 1)<<endl;
 #endif
-    if (line[i]==0xC4 && line[i+1]==0x04) { // tab?
+    if (line[i]==0xE5 || line[i]==0xE6) { // метка формата
+      i+=3; // игнорируем её
+    }
+    else if (line[i]==0xC1 && line[i+1]==0xB0) {  // знак градуса
+#ifdef __DEBUGLOG__
+      cout << "  decode_line: DEGREE"<<endl;
+#endif
+      line[j++]=0xC2;
+      line[j++]=0xB0;
+      i+=2;
+    }
+    else if (line[i]==0xAC && line[i+1]==0x82) {  // знак Евро
+#ifdef __DEBUGLOG__
+      cout << "  decode_line: EURO"<<endl;
+#endif
+      // поскольку в начале строки всегда есть метка формата, то
+      // у нас есть место, куда копировать. Если, конечно, в строке не 20
+      // знаков Евро. Хотя, конечно, ситуация заставляет переписать
+      // функцию.
+      line[j++]=0xE2;
+      line[j++]=0x82;
+      line[j++]=0xAC;
+      i+=2;
+    }
+    else if (line[i]==0xC4 && line[i+1]==0x04) {  // tab?
 #ifdef __DEBUGLOG__
       cout << "  decode_line: TAB"<<endl;
 #endif
