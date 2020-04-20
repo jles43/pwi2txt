@@ -230,7 +230,7 @@ void process_file(ifstream &is, ofstream &os, off_t flen)
 #ifdef __DEBUGLOG__
   cout << "> process_file(is="<<&is<<", os="<<&os<<", flen="<<flen<<")"<<endl;
 #endif
-  char header[0x12c];
+  char header[PWI_HEADER_SIZE];
   is.read(header, sizeof(header)); flen -= 0x12c;
   CHAR *buffer = new CHAR[flen];
   is.read((char*)buffer, flen);
