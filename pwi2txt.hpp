@@ -2,7 +2,7 @@
 #define __PWI2TXT_HPP_INCLUDED
 
 #include <sys/stat.h>
-#include <vector> 
+#include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -46,7 +46,6 @@ class PWIBuffer {
   unsigned int m_next;
   string m_errmsg;
   friend class PWIFile;
-  bool valid_line(void);
   unsigned int find_eol(void);
 public:
   PWIBuffer(off_t length);

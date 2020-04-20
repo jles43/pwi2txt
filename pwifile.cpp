@@ -82,16 +82,6 @@ PWIBuffer::~PWIBuffer()
   delete[] m_data;
 }
 
-/*
- * Был замечен одинокий маркер формата, за которым сразу лежал нулевой байт
- * Такая строка признаётся неправильной.
- */
-bool PWIBuffer::valid_line(void)
-{
-  unsigned int i = m_pos;
-  unsigned int m2, m3;
-}
-
 /* Ищет конец строки: либо маркер конца строки, либо нулевой байт вне маркера формата
  */
 unsigned int PWIBuffer::find_eol(void)
@@ -146,7 +136,7 @@ unsigned int PWIBuffer::linesize(void)
 
 // class PWIFile ///////////////////////////////////////////////////////////////
 
-PWIFile::PWIFile(const char *filename) 
+PWIFile::PWIFile(const char *filename)
 {
   m_errmsg = "";
   m_filename = filename;
