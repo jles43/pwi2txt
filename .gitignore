@@ -34,3 +34,4 @@
 # Workfiles
 *.pwi
 *.dump
+*.err
