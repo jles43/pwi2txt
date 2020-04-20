@@ -189,8 +189,8 @@ bool PWIFile::read_buffer(PWIBuffer &buf)
 const string& PWIFile::text(void)
 {
   m_text = "";
-  for (auto const& line: m_lines) {
-    m_text += line;
+  for (vector<string>::iterator i=m_lines.begin(); i!=m_lines.end(); i++) {
+    m_text += *i;
     m_text += "\n";
   }
   return m_text;
@@ -203,11 +203,17 @@ PWIResultFile::PWIResultFile(const char *filename)
   m_errmsg = "";
   m_filename = filename? filename : "";
   m_stream = nullptr;
+#ifdef __WATCOMC__
+  m_iobuf = nullptr;
+#endif
 }
 
 PWIResultFile::~PWIResultFile()
 {
   if (m_stream) delete m_stream;
+#ifdef __WATCOMC__
+  if (m_iobuf) delete[] m_iobuf;
+#endif
 }
 
 bool PWIResultFile::open(void)
@@ -215,8 +221,13 @@ bool PWIResultFile::open(void)
   if (m_filename.length()!=0)
     m_stream = new ofstream(m_filename.c_str());
   else {
+#ifdef __WATCOMC__
+    m_iobuf = new char[1024];
+    m_stream = new ofstream(stdout->_handle, m_iobuf, 1024);
+#else
     m_stream = new ofstream();
     m_stream->basic_ios<char>::rdbuf(cout.rdbuf());
+#endif
   }
   return m_stream->good();
 }

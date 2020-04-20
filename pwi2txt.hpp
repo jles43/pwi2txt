@@ -9,6 +9,11 @@
 
 using namespace std;
 
+#ifdef __WATCOMC__
+#define nullptr 0
+#include <stdio.h>
+#endif
+
 // длина заголовка без особой информации
 #define PWI_HEADER_SIZE 0x12c
 // 128 K
@@ -78,6 +83,9 @@ class PWIResultFile {
   string m_errmsg;
   string m_filename;
   ofstream *m_stream;
+#ifdef __WATCOMC__
+  char *m_iobuf;
+#endif
 public:
   PWIResultFile(const char *filename);
   ~PWIResultFile();
