@@ -56,11 +56,19 @@ const char *PWILine::decode(void)
     }
     else if (m_data[i]>=128) {
       CHAR b1 = m_data[i++];
-      // из 0x10 делаем 0xD0, из 0x11 делаем 0xD1, как в UTF-8
-      CHAR b2 = m_data[i++]|0xC0;
-      // и меняем порядок байтов
-      m_line += b2;
-      m_line += b1;
+      CHAR b2 = m_data[i++];
+      if (b2==0x10 || b2==0x11) {
+        // из 0x10 делаем 0xD0, из 0x11 делаем 0xD1, как в UTF-8
+        b2 |= 0xC0;
+        // и меняем порядок байтов
+        m_line += b2;
+        m_line += b1;
+      }
+      else {
+        // копируем, как было
+        m_line += b1;
+        m_line += b2;
+      }
     }
     else
       m_line += m_data[i++];
