@@ -44,7 +44,7 @@ const char *PWILine::decode(void)
       m_line += "\xE2\x82\xAC";
       i+=2;
     }
-    else if (m2==0xC304) {
+    else if (m2==0xC404) {
       // TAB?
       m_line += "\t";
       i+=2;
