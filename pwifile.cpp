@@ -34,10 +34,10 @@ const char *PWILine::decode(void)
       // маркер формата игнорируем
       i+=3;
     }
-    else if (m2==0xC1B0) {
+    else if (m2>=0xC1B0 && m2<=0xC1BF) {
       // знак градуса
-      m_line += "\xC2\xB0";
-      i+=2;
+      m_line += "\xC2"; i++;  // пропускаем C1 и записываем C2
+      m_line += m_data[i++];  // копируем второй байт
     }
     else if (m2==0xAC82) {
       // знак евро
