@@ -34,10 +34,15 @@ const char *PWILine::decode(void)
       // маркер формата игнорируем
       i+=3;
     }
-    else if (m2>=0xC1B0 && m2<=0xC1BF) {
+    else if (m2>=0xC1A0 && m2<=0xC1BF) {
       // знак градуса
       m_line += "\xC2"; i++;  // пропускаем C1 и записываем C2
       m_line += m_data[i++];  // копируем второй байт
+    }
+    else if (m2>=0xC1C0 && m2<=0xC1FF) {
+      // умляуты
+      m_line += m_data[i++]|0x02; // ставим 1 в бит 1:   00000010 = 0x02
+      m_line += m_data[i++]&0xBF; // обнуляем бит 6:     10111111 = 0xBF
     }
     else if (m2==0xAC82) {
       // знак евро
@@ -49,16 +54,12 @@ const char *PWILine::decode(void)
       m_line += "\t";
       i+=2;
     }
-    else if (m_data[i]==0xC1) {
-      // умляуты
-      m_line += m_data[i++]|0x02; // ставим 1 в бит 1:   00000010 = 0x02
-      m_line += m_data[i++]&0xBF; // обнуляем бит 6:     10111111 = 0xBF
-    }
     else if (m_data[i]>=128) {
       CHAR b1 = m_data[i++];
       CHAR b2 = m_data[i++];
-      if (b2==0x10 || b2==0x11) {
-        // из 0x10 делаем 0xD0, из 0x11 делаем 0xD1, как в UTF-8
+      if (b2>=0x04 && b2<=0x1F) {
+        // из 0x0_ делаем 0xC_
+        // из 0x1_ делаем 0xD_
         b2 |= 0xC0;
         // и меняем порядок байтов
         m_line += b2;
